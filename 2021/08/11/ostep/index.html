@@ -6,16 +6,65 @@
  font-family: 'JetBrains Mono';
  src: local('JetBrains Mono'), url('/font/JetBrainsMono-Regular.woff2') format('woff2');
 }</style><meta name="generator" content="Hexo 5.4.0"></head><body><header><nav><a href="/">Home</a><a href="/archives/">Archives</a></nav></header><main><article><div id="post-bg"><div id="post-title"><h1>Operating Systems Three Easy Pieces 学习笔记</h1><hr></div><div id="post-content"><h3 id="Virtualization"><a href="#Virtualization" class="headerlink" title="Virtualization"></a>Virtualization</h3><ul>
-<li><code>fork()</code>和<code>exec()</code>接口共同实现了新进程的创建</li>
-<li>之所以提供<code>fork()</code>和<code>exec()</code>两个接口: 在两者调用之间可以进行一些新进程运行相关的工作/配置, 以及一些特性: 输出重定向, 管道等.</li>
-<li>Ctrl+C: 中止进程(正常退出)</li>
-<li>Ctrl+Z: 暂停进程(稍后可继续运行)</li>
-<li>进程可以通过<code>signal()</code>系统调用捕获各种信号</li>
-<li>UNIX shell 通常使用<code>fork()</code>, <code>wait()</code> ,<code>exec()</code>来执行用户输入的命令</li>
-<li>用户只能通过信号控制自己所创建的进程, superuser能控制所有进程</li>
-<li><code>pipe()</code>系统调用可以实现进程之间的管道通信, 它返回两个file descriptor分别用于读写.</li>
-<li>发生中断时: 硬件负责将寄存器, PC等push到进程的内核栈上保存, 中断返回时从内核栈上恢复</li>
-<li>进程切换时, OS会执行<code>switch</code>例程(一些底层汇编语句)，将当前进程的寄存器, 内核栈执政等内容保存到PCB里, 将即将执行的进程从它的PCB中恢复</li>
+<li><p><code>fork()</code>和<code>exec()</code>接口共同实现了新进程的创建</p>
+</li>
+<li><p>之所以提供<code>fork()</code>和<code>exec()</code>两个接口: 在两者调用之间可以进行一些新进程运行相关的工作/配置, 以及一些特性: 输出重定向, 管道等.</p>
+</li>
+<li><p>Ctrl+C: 中止进程(正常退出)</p>
+</li>
+<li><p>Ctrl+Z: 暂停进程(稍后可继续运行)</p>
+</li>
+<li><p>进程可以通过<code>signal()</code>系统调用捕获各种信号</p>
+</li>
+<li><p>UNIX shell 通常使用<code>fork()</code>, <code>wait()</code> ,<code>exec()</code>来执行用户输入的命令</p>
+</li>
+<li><p>用户只能通过信号控制自己所创建的进程, superuser能控制所有进程</p>
+</li>
+<li><p><code>pipe()</code>系统调用可以实现进程之间的管道通信, 它返回两个file descriptor分别用于读写.</p>
+</li>
+<li><p>发生中断时: 硬件负责将寄存器, PC等push到进程的内核栈上保存, 中断返回时从内核栈上恢复</p>
+</li>
+<li><p>进程切换时, OS会执行<code>switch</code>例程(一些底层汇编语句)，将当前进程的寄存器, 内核栈执政等内容保存到PCB里, 将即将执行的进程从它的PCB中恢复</p>
+</li>
+<li><p>proportional-share scheduler:</p>
+<ul>
+<li>每个进程有一个ticket份额, 每次调度生成一个随机数决定运行哪个进程,</li>
+</ul>
+<p>长期各进程占用CPU的时间比例会趋近ticket份额的比例</p>
+<ul>
+<li><p>stride scheduling: 各进程的stride(步长)与ticket成反比, 每次调度选择累计走过的步长最小的进程.</p>
+</li>
+<li><p>CFS(The Linux Completely Fair Scheduler): 记录每个进程的<code>vruntime</code>, 每个进程在被调度前, 最少要先运行<code>sched_latency</code>/进程数目 长的时间,</p>
+<p>每次调度选择<code>vruntime</code>最小的进程, 不同进程<code>vruntime</code>的增长速度和他的priority(<code>nice</code>值)相关.</p>
+</li>
+</ul>
+</li>
+<li><p><code>sizeof</code>在程序编译时被计算 (是操作符而不是函数)</p>
+</li>
+<li><p>page fault: 指查页表时发现某一页不在主存中(swap到disk上了). 会触发缺页中断, OS负责执行缺页处理例程(无论TLB是由硬件还是软件管理). </p>
+</li>
+<li><p>当某一页不在主存中时, 对应的页表项中的PFN(Page Frame Number)的位置可以用来存放该页在disk上的位置.</p>
+</li>
+<li><p>Belady’s Anomaly: 对于某一特定的访问序列, cache容量增加时, cache hit数反而减小的现象</p>
+<ul>
+<li>FIFO, Random, second chance algorithm具有belady现象</li>
+<li><strong>Reason Behind Belady’s Anomaly</strong><ul>
+<li>An algorithm suffers from Belady’s Anomaly if and only if it does not follow stack property.</li>
+<li>Algorithms that follow stack property are called as <strong>stack based algorithms</strong>.</li>
+<li>Stack based algorithms do not suffer from Belady’s Anomaly.</li>
+<li>This is because these algorithms assign priority to a page for replacement that is independent of the number of frames in the main memory.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>LRU页面置换算法的硬件支持: (<a target="_blank" rel="noopener" href="https://www.codenong.com/cs110713095/">https://www.codenong.com/cs110713095/</a>)</p>
+<ul>
+<li>寄存器: 为每个在内存中的页面配置一个移位寄存器, 访问页面时将最高位置为1, 每隔一定时间右移一位, 当需要换出页时, 换出寄存器值最小的页.</li>
+<li>栈: 利用一个特殊的栈来保存当前使用的各个页面的页面号, 最近访问的页面号压入栈顶, 栈底是最久未被使用的页面号.</li>
+</ul>
+</li>
+<li><p>一些常见页面置换算法的总结: <a target="_blank" rel="noopener" href="https://yuerer.com/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E4%B9%8B-%E8%99%9A%E6%8B%9F%E5%AD%98%E5%82%A8%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/">https://yuerer.com/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E4%B9%8B-%E8%99%9A%E6%8B%9F%E5%AD%98%E5%82%A8%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/</a></p>
+</li>
 </ul>
 <div id="paginator"></div></div><div id="post-footer"><hr><a href="/2021/08/04/modern-os/">modern_os Next →</a><hr></div><div id="bottom-btn"><a id="to-index" href="#post-index" title="index">≡</a><a id="to-top" href="#post-title" title="to top">∧</a></div><div id="Valine"></div><script>new Valine({
  el: '#Valine'
